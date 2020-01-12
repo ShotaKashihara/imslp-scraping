@@ -21,12 +21,13 @@ Object.defineProperty(global.Element.prototype, 'innerText', {
 const json = JSON.parse(fs.readFileSync('./for_orchestra.json', 'utf8'))
 const titles = Object.values(json['p1']).flat().map(t => t.split('|')[0])
 // const titles = [
-//   // "Symphony No.2 (Rosaria, Danielle)",
+//   "Symphony No.2 (Rosaria, Danielle)",
 //   "Symphony No.2 (Sago, Yasunori)",
 // ]
 
 async function getTable(title) {
-  return await rp(`https://imslp.org/wiki/${encodeURIComponent(title)}`)
+  const url = `https://imslp.org/wiki/${encodeURIComponent(title)}`
+  return await rp(url)
     .then(body => {
       console.log(`Finish request. ${title}`)
       const document = new JSDOM(body).window.document
@@ -34,10 +35,10 @@ async function getTable(title) {
       const wi_body = Array.from(document.querySelectorAll('.wi_body > table > tbody > tr'))
       return wp_header.concat(wi_body).map(r => {
         return {
-          "key": r.querySelector('th').textContent.trim(),
-          "value": r.querySelector('td')
+          key: r.querySelector('th').textContent.trim(),
+          value: r.querySelector('td')
             ? r.querySelector('td').innerText.replace(/<br \/>/g, '\n').trim()
-            : "(empty)"
+            : null
         }
       })
     })
@@ -59,24 +60,4 @@ const main = async () => {
 (async () => {
   const result = await main()
   fs.writeFile('imslp.json', JSON.stringify(result, null, 2), 'utf8', () => { })
-
-  // result.forEach(r => {
-  //   r.forEach(r2 => {
-  //     if(r2.key === "Work Title") {
-  //       console.log(r2.value)
-  //     }
-  //     if(r2.key === "Instrumentation") {
-  //       console.log(r2.value)
-  //     }
-  //   })
-  // })
 })()
-
-const music = {
-  url: "http://imslp.org",
-  composer: "Beethoven",
-  title: "Symphony No.3, Op.67",
-  infomation: {
-
-  }
-}
