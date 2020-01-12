@@ -7,7 +7,7 @@ global.Element = (new JSDOM()).window.Element;
 Object.defineProperty(global.Element.prototype, 'innerText', {
   get() {
     return sanitizeHtml(this.innerHTML, {
-      allowedTags: [ 'br' ], // remove all tags and return text content only
+      allowedTags: ['br'], // remove all tags and return text content only
       allowedAttributes: {}, // remove all tags and return text content only
     });
   },
@@ -18,53 +18,47 @@ Object.defineProperty(global.Element.prototype, 'innerText', {
 // For Orchestra
 // https://imslp.org/wiki/List_of_Orchestra_Pieces_with_Parts_Available
 // 
-const titles = [
-  "https://imslp.org/wiki/Symphony_No.3%2C_Op.55_(Beethoven%2C_Ludwig_van)",
-  // "https://imslp.org/wiki/Symphony_No.4%2C_Op.60_(Beethoven%2C_Ludwig_van)",
-  // "https://imslp.org/wiki/Symphony_No.5,_Op.67_%28Beethoven,_Ludwig_van%29",
-  // "https://imslp.org/wiki/Symphony_No.6%2C_Op.68_(Beethoven%2C_Ludwig_van)",
-  // "https://imslp.org/wiki/Symphony_No.7%2C_Op.92_(Beethoven%2C_Ludwig_van)",
-  // "https://imslp.org/wiki/Symphony_No.8%2C_Op.93_(Beethoven%2C_Ludwig_van)",
-  // "https://imslp.org/wiki/Symphony_No.9%2C_Op.125_(Beethoven%2C_Ludwig_van)",
-]
-
-const music = {
-  url: "http://imslp.org",
-  composer: "Beethoven",
-  title: "Symphony No.3, Op.67",
-  infomation: {
-
-  }
-}
+const json = JSON.parse(fs.readFileSync('./for_orchestra.json', 'utf8'))
+const titles = Object.values(json['p1']).flat().map(t => t.split('|')[0])
+// const titles = [
+//   // "Symphony No.2 (Rosaria, Danielle)",
+//   "Symphony No.2 (Sago, Yasunori)",
+// ]
 
 async function getTable(title) {
-  console.log(`${title}: Requesting...`)
-  return await rp(`${title}`)
+  return await rp(`https://imslp.org/wiki/${encodeURIComponent(title)}`)
     .then(body => {
-      console.log('Finish.')
+      console.log(`Finish request. ${title}`)
       const document = new JSDOM(body).window.document
       const wp_header = Array.from(document.querySelectorAll('.wp_header > table > tbody > tr'))
       const wi_body = Array.from(document.querySelectorAll('.wi_body > table > tbody > tr'))
       return wp_header.concat(wi_body).map(r => {
         return {
           "key": r.querySelector('th').textContent.trim(),
-          "value": r.querySelector('td').innerText.replace(/<br \/>/g, '\n').trim()
+          "value": r.querySelector('td')
+            ? r.querySelector('td').innerText.replace(/<br \/>/g, '\n').trim()
+            : "(empty)"
         }
       })
     })
+    .catch(e => { console.error(`handle error title: ${title}`); throw e })
 }
 
 const main = async () => {
+  const length = titles.length
   return await promiseMap(
     titles,
-    title => getTable(title),
-    { concurrency: 2 }
+    (title, index) => {
+      console.log(`[${index}/${length}] https://imslp.org/wiki/${title}: Requesting...`)
+      return getTable(title)
+    },
+    { concurrency: 4 }
   )
 }
 
 (async () => {
   const result = await main()
-  fs.writeFile('imslp.json', JSON.stringify(result, null, 2), 'utf8', () => {})
+  fs.writeFile('imslp.json', JSON.stringify(result, null, 2), 'utf8', () => { })
 
   // result.forEach(r => {
   //   r.forEach(r2 => {
@@ -77,3 +71,12 @@ const main = async () => {
   //   })
   // })
 })()
+
+const music = {
+  url: "http://imslp.org",
+  composer: "Beethoven",
+  title: "Symphony No.3, Op.67",
+  infomation: {
+
+  }
+}
