@@ -60,6 +60,7 @@ const extractPart = (v, partName) => {
   }
 }
 
+// Add instrument parts.
 const parts = ["strings", "piccolo", "flute", "oboe", "english horn", "clarinet", "bass clarinet", "bassoon", "contrabassoon", "horn", "trumpet", "trombone", "tuba", "harp", "timpani", "triangle", "bass drum", "cymbal", "piano", "snare drum", "tambourine", "glockenspiel", "celesta", "tam-tam", "xylophone", "organ", "euphonium", "guitar"]
 
 json.forEach(m => {
@@ -79,6 +80,13 @@ json.forEach(m => {
   if (minutes > 0) {
     m["additional_infomation"]["average_duration_minutes"] = minutes
   }
+})
+
+// Add composer's translation.
+const composer_translation = JSON.parse(fs.readFileSync('input/composer_translation.json', 'utf8'))
+json.forEach(m => {
+  const composer = m["composer"]
+  m["additional_infomation"]["composer_ja"] = composer_translation[composer].ja
 })
 
 fs.writeFileSync('output/add_extract_infomation.json', JSON.stringify(json, null, 2), 'utf8', () => { })
