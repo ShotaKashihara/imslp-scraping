@@ -51,9 +51,9 @@ const json = JSON.parse(fs.readFileSync('output/imslp.json', 'utf8')).map(v => {
 const extractPart = (v, partName) => {
   if (v.match(new RegExp(partName))) {
     if (v.match(new RegExp(`[1-9] ${partName}`))) {
-      return [partName.replace(" ", "_").replace("-", "_"), Number(v.match(new RegExp(`[1-9] ${partName}`))[0].split(" ")[0])]
+      return [partName.replace(/[ -]/g, "_"), Number(v.match(new RegExp(`[1-9] ${partName}`))[0].split(" ")[0])]
     } else {
-      return [partName.replace(" ", "_").replace("-", "_"), 1]
+      return [partName.replace(/[ -]/g, "_"), 1]
     }
   } else {
     return []
